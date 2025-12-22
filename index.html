@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Call Center Ratings Dashboard</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #2563eb;       
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+        }
+
+        body.dark-mode {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+            --primary: #60a5fa;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-body); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid var(--border);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Header */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
+            position: sticky; top: 0; z-index: 100;
+            padding: 15px 0; border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        body.dark-mode .glass-header { background: rgba(30, 41, 59, 0.95); }
+
+        .header-inner {
+            max-width: 1400px; margin: 0 auto; padding: 0 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .brand-box h1 { margin: 0; font-size: 1.3rem; color: var(--primary); display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        .source-badge { font-size: 0.75rem; color: var(--text-secondary); display: block; margin-top: 4px; font-weight: 500;}
+
+        .btn-icon {
+            background: transparent; border: 1px solid var(--border); color: var(--text-main);
+            width: 36px; height: 36px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-icon:hover { background: var(--border); color: var(--primary); }
+        .active-lang { background: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
+
+        /* Layout */
+        .container {
+            max-width: 1400px; margin: 25px auto; padding: 0 20px;
+            display: grid; grid-template-columns: 320px 1fr; gap: 25px;
+        }
+        @media (max-width: 1024px) { .container { grid-template-columns: 1fr; } }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card); border-radius: var(--radius); padding: 20px;
+            border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px;
+        }
+        
+        /* Sidebar Elements */
+        .sidebar { position: sticky; top: 85px; height: fit-content; }
+        .form-select {
+            width: 100%; padding: 10px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main);
+            margin-bottom: 12px; outline: none; box-sizing: border-box; 
+            font-family: 'Inter', sans-serif; font-size: 0.9rem;
+        }
+        
+        /* Promo Card */
+        .promo-card {
+            background: linear-gradient(135deg, var(--primary), #1e40af);
+            color: white; text-align: center; position: relative; overflow: hidden; padding-bottom: 15px;
+        }
+        .promo-logo-img {
+            max-width: 150px; margin-bottom: 15px; padding: 5px;
+        }
+        .promo-bg-circle {
+            position: absolute; width: 120px; height: 120px; background: rgba(255,255,255,0.1);
+            border-radius: 50%; top: -30px; right: -30px;
+        }
+        .slogan-box {
+            min-height: 60px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; font-weight: 600; font-style: italic; margin: 10px 0;
+            padding: 0 10px; opacity: 0; transition: opacity 0.5s ease-in-out;
+            line-height: 1.4;
+        }
+        .slogan-visible { opacity: 1; }
+        
+        .social-row { display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap;}
+        .social-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.2); color: white; border: none;
+            padding: 8px 12px; border-radius: 8px; text-decoration: none;
+            font-size: 0.85rem; transition: 0.2s; font-weight: 500;
+        }
+        .social-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-1px); }
+
+        .contact-info {
+            font-size: 0.75rem; margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.3);
+            padding-top: 10px; opacity: 0.9; font-style: italic;
+        }
+
+        /* Indicators */
+        .ind-item { margin-bottom: 15px; }
+        .ind-head { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; color: var(--text-secondary); }
+        .progress-track { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+
+        /* KPI Grid */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;
+        }
+        .stat-card {
+            background: var(--bg-card); padding: 20px; border-radius: var(--radius);
+            border: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between;
+            box-shadow: var(--shadow);
+        }
+        .stat-icon {
+            width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+        }
+
+        /* Charts */
+        .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 25px; }
+        @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+        .chart-container { position: relative; height: 320px; width: 100%; }
+
+        /* Table & Badges based on Scale.xlsx */
+        .table-responsive { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
+        th { background: var(--bg-body); font-weight: 600; color: var(--text-secondary); white-space: nowrap; cursor: pointer; text-align: left;}
+        th:hover { background: rgba(0,0,0,0.05); }
+        
+        th.text-center, td.text-center { text-align: center; }
+
+        .rating-badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; color: #fff; display: inline-block; min-width: 60px; text-align: center; }
+        
+        .grade-AAA { background-color: #166534; } 
+        .grade-AA  { background-color: #22c55e; } 
+        .grade-A   { background-color: #3b82f6; } 
+        .grade-BBB { background-color: #0ea5e9; } 
+        .grade-BB  { background-color: #f59e0b; } 
+        .grade-B   { background-color: #f97316; } 
+        .grade-CCC { background-color: #ef4444; } 
+        .grade-CC  { background-color: #dc2626; } 
+        .grade-C   { background-color: #b91c1c; } 
+        .grade-D   { background-color: #991b1b; } 
+
+        .phone-display {
+            display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-main);
+            background: var(--bg-body); padding: 8px 12px; border-radius: 8px; margin-bottom: 15px; font-weight: 500;
+        }
+
+        /* Footer */
+        .footer { text-align: center; padding: 25px; color: var(--text-secondary); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 20px; background: var(--bg-card); }
+        
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div class="loading-overlay" id="loader">
+        <div class="spinner"></div>
+        <p id="loader-text" style="font-weight:500;">Ma'lumotlar yuklanmoqda...</p>
+        <button id="retry-btn" onclick="fetchData()" style="display:none; margin-top:10px; padding:8px 16px; cursor:pointer;">Qayta urinish</button>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-header">
+        <div class="header-inner">
+            <div class="brand-box">
+                <h1><i class="fa-solid fa-headset"></i> <span id="t-brand">Call Center Tahlili</span></h1>
+                <div>
+                    <span class="source-badge" id="t-subtitle">Tijorat banklari reytingi</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-icon" onclick="toggleTheme()"><i class="fa-solid fa-moon"></i></button>
+                <div style="display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+                    <button class="btn-icon active-lang" onclick="setLang('uz')" id="btn-uz">UZ</button>
+                    <button class="btn-icon" onclick="setLang('ru')" id="btn-ru">RU</button>
+                    <button class="btn-icon" onclick="setLang('en')" id="btn-en">EN</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="card">
+                <h3><i class="fa-solid fa-filter"></i> <span id="t-filter">Filtrlash</span></h3>
+                
+                <label id="l-period" style="font-size:0.8rem; color:var(--text-secondary)">Davr</label>
+                <select id="filter-period" class="form-select" onchange="renderDashboard()">
+                    <!-- JS fills this -->
+                </select>
+
+                <label id="l-bank" style="font-size:0.8rem; color:var(--text-secondary)">Bankni tanlang</label>
+                <select id="filter-bank" class="form-select" onchange="renderDashboard()">
+                    <option value="">— Barchasi —</option>
+                    <!-- JS fills this -->
+                </select>
+
+                <button class="btn-icon" style="width:100%; border-radius:8px; gap:8px;" onclick="resetFilters()">
+                    <i class="fa-solid fa-rotate-right"></i> <span id="t-reset">Tozalash</span>
+                </button>
+            </div>
+
+            <div class="card">
+                <h3><i class="fa-solid fa-chart-pie"></i> <span id="t-details">Batafsil Tahlil</span></h3>
+                
+                <div id="bank-info-header" style="margin-bottom: 10px;">
+                    <h4 id="details-bank-name" style="margin: 0; color: var(--primary);"></h4>
+                </div>
+                
+                <div id="indicators-container" style="margin-top:10px;">
+                    <!-- JS fills this -->
+                </div>
+            </div>
+
+            <!-- Promo Card -->
+            <div class="card promo-card">
+                <div class="promo-bg-circle"></div>
+                <div style="position:relative; z-index:2; padding-top:10px;">
+                    <!-- Logo fixed no background -->
+                    <img src="https://snsratings.uz/static/media/logo.b58a119151d230b7d82af1dfaf415791.svg" class="promo-logo-img" alt="SNS Ratings">
+                    
+                    <div class="slogan-box" id="slogan-box">
+                        Standard and Sensitive Ratings
+                    </div>
+
+                    <div class="social-row">
+                        <a href="https://t.me/snsratings" target="_blank" class="social-btn">
+                            <i class="fa-brands fa-telegram"></i> Telegram
+                        </a>
+                        <a href="https://snsratings.uz/" target="_blank" class="social-btn">
+                            <i class="fa-solid fa-globe"></i> Web
+                        </a>
+                    </div>
+
+                    <!-- Footer text in poster -->
+                    <p class="contact-info" id="t-poster-footer">
+                        To'liqroq ma'lumot olish uchun Reyting Agentligi hodimlariga murojaat qiling
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+            <!-- KPI Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div>
+                        <p id="t-kpi-top" style="font-size:0.85rem; color:var(--text-secondary); margin:0;">Eng Yuqori Ball</p>
+                        <h2 id="kpi-score" style="margin:5px 0; color:#166534;">0</h2>
+                        <small id="kpi-bank" style="color:var(--text-main); font-weight:500;">-</small>
+                    </div>
+                    <div class="stat-icon" style="background:rgba(22, 101, 52, 0.1); color:#166534;">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div>
+                        <p id="t-kpi-avg" style="font-size:0.85rem; color:var(--text-secondary); margin:0;">O'rtacha Ball</p>
+                        <h2 id="kpi-avg" style="margin:5px 0; color:var(--primary);">0</h2>
+                        <small id="t-kpi-market" style="color:var(--text-secondary);">Bozor bo'yicha</small>
+                    </div>
+                    <div class="stat-icon" style="background:rgba(37, 99, 235, 0.1); color:var(--primary);">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div>
+                        <p id="t-kpi-count" style="font-size:0.85rem; color:var(--text-secondary); margin:0;">Banklar Soni</p>
+                        <h2 id="kpi-count" style="margin:5px 0; color:var(--warning);">0</h2>
+                        <small id="t-kpi-active" style="color:var(--text-secondary);">Faol ishtirokchilar</small>
+                    </div>
+                    <div class="stat-icon" style="background:rgba(245, 158, 11, 0.1); color:var(--warning);">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-row">
+                <div class="card">
+                    <h4 style="margin:0 0 15px 0;"><i class="fa-solid fa-arrow-trend-up"></i> <span id="t-chart-trend">Dinamika</span></h4>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h4 style="margin:0 0 15px 0;"><i class="fa-solid fa-bullseye"></i> <span id="t-chart-radar">Ko'rsatkichlar (P1-P4)</span></h4>
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+                    <h4 style="margin:0;"><i class="fa-solid fa-table"></i> <span id="t-main-table">Reyting Jadvali</span></h4>
+                    <button onclick="exportToExcel()" class="btn-icon" style="width:auto; padding:0 15px; font-size:0.85rem; gap:8px;">
+                        <i class="fa-solid fa-file-excel"></i> Excel
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table id="ratingTable">
+                        <thead>
+                            <!-- Generated by JS -->
+                        </thead>
+                        <tbody id="tableBody"> <!-- Content --> </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:10px; text-align:right; font-size:0.8rem; color:var(--text-secondary);" id="row-count"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        © 2025 Standard and Sensitive Ratings. All rights reserved.
+    </div>
+
+    <script>
+        // Updated data link with embedded fallback logic
+        const JSON_URL = "https://raw.githubusercontent.com/sunattagayev-cloud/banks_call_center_ratings/refs/heads/main/Call_center_banks.json";
+        
+        // Embedded data for 2025_10 + some history (Example subset to mitigate CORS/Server issues)
+        const sourceData = [
+    {"Davr":"2025_10","BANK NOMI":"ANOR BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.96,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.82,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"MIKROKREDITBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.42,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.66,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"DAVR-BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.92,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.51,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"TURONBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":99.67,"Boshlang'ich ko'rsatkichlar (P2)":96.33,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.2,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":94.4,"Yakuniy ball":96.49,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"ZIRAAT BANK UZBEKISTAN","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.46,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.24,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.45,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"TRASTBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.58,"Boshlang'ich ko'rsatkichlar (P2)":96.0,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.24,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.43,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"TBC BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.04,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.0,"Yakuniy ball":96.39,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"OCTOBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.96,"Boshlang'ich ko'rsatkichlar (P2)":96.4,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.36,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.33,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"ORIENT FINANS BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.33,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.68,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.29,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"KAPITALBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.12,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.72,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.24,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"IPOTEKA-BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":96.75,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.16,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"APEX BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.33,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.48,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.5,"Yakuniy ball":96.15,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"OPEN BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":96.38,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.05,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"ASAKABANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":96.33,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.03,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"AVO BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.54,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.64,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":94.0,"Yakuniy ball":95.97,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"XALQ BANKI","Vaqt bilan bog'liq ko'rsatkichlar (P1)":96.04,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":95.95,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"AGROBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":95.71,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":95.85,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"ASIA ALLIANCE BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":95.88,"Boshlang'ich ko'rsatkichlar (P2)":96.0,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":95.84,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"INFINBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":95.62,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":95.82,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"ALOQABANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":94.62,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":95.52,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"GARANT BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":93.42,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":95.16,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"HAMKORBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":91.33,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":97.0,"Yakuniy ball":94.77,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"O'ZMILLIYBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":91.83,"Boshlang'ich ko'rsatkichlar (P2)":96.0,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":94.63,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"TENGE BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":91.0,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.6,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":94.35,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"BIZNESNI RIVOJLANTIRISH BANKI","Vaqt bilan bog'liq ko'rsatkichlar (P1)":90.54,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":94.3,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"MADAD INVEST BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":91.62,"Boshlang'ich ko'rsatkichlar (P2)":95.33,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":94.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.0,"Yakuniy ball":93.94,"REYTING BAHOSI":"(uz) AA"},
+    {"Davr":"2025_10","BANK NOMI":"POYTAXT BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":90.12,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.06,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":93.87,"REYTING BAHOSI":"(uz) AA"},
+    {"Davr":"2025_10","BANK NOMI":"YANGI BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":96.96,"Boshlang'ich ko'rsatkichlar (P2)":96.9,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":80.0,"Yakuniy ball":93.1,"REYTING BAHOSI":"(uz) AA"},
+    {"Davr":"2025_10","BANK NOMI":"BANK IPAK YO'LI","Vaqt bilan bog'liq ko'rsatkichlar (P1)":84.79,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":92.57,"REYTING BAHOSI":"(uz) AA"},
+    {"Davr":"2025_10","BANK NOMI":"UZUM BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":83.92,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":92.31,"REYTING BAHOSI":"(uz) AA"},
+    {"Davr":"2025_10","BANK NOMI":"UNIVERSAL BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.92,"Boshlang'ich ko'rsatkichlar (P2)":95.67,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":94.6,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":70.0,"Yakuniy ball":90.78,"REYTING BAHOSI":"(uz) AA"},
+    {"Davr":"2025_10","BANK NOMI":"O'ZSANOATQURILISHBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":78.42,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":90.66,"REYTING BAHOSI":"(uz) AA"},
+    {"Davr":"2025_10","BANK NOMI":"HAYOT BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":99.92,"Boshlang'ich ko'rsatkichlar (P2)":0.0,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":0.0,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":0.0,"Yakuniy ball":29.97,"REYTING BAHOSI":"(uz) F"},
+    {"Davr":"2025_10","BANK NOMI":"SODEROT BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":99.17,"Boshlang'ich ko'rsatkichlar (P2)":0.0,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":0.0,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":0.0,"Yakuniy ball":29.75,"REYTING BAHOSI":"(uz) F"},
+    {"Davr":"2025_10","BANK NOMI":"KDB BANK O'ZBEKISTON","Vaqt bilan bog'liq ko'rsatkichlar (P1)":96.25,"Boshlang'ich ko'rsatkichlar (P2)":0.0,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":0.0,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":0.0,"Yakuniy ball":28.88,"REYTING BAHOSI":"(uz) F"}
+];
+        
+        let rawData = [];
+        let curLang = 'uz';
+        let trendChartInstance = null;
+        let radarChartInstance = null;
+        let sloganInterval = null;
+        let sortCol = 'Yakuniy ball';
+        let sortAsc = false;
+
+        const slogans = {
+            uz: ["Mijozlar ishonchi – eng oliy mukofot", "Raqamli bank xizmatlarida sifat standarti", "Ochiqlik va shaffoflik – bizning tamoyilimiz", "Har bir qo'ng'iroq muhim ahamiyatga ega", "Bank xizmatlari sifatini birgalikda oshiramiz", "Professional yondashuv – barqaror rivojlanish garovi"],
+            ru: ["Доверие клиентов – высшая награда", "Стандарт качества в цифровом банкинге", "Открытость и прозрачность – наш принцип", "Важен каждый звонок", "Вместе повышаем качество банковских услуг", "Профессиональный подход – залог устойчивого развития"],
+            en: ["Customer trust is the highest reward", "Quality standard in digital banking", "Openness and transparency are our principles", "Every call matters", "Improving banking service quality together", "Professional approach - key to sustainable development"]
+        };
+
+        const i18n = {
+            uz: {
+                title: "Call Center Tahlili", sub: "Tijorat banklari reytingi",
+                filter: "Filtrlash", period: "Davr", bankSelect: "Bankni tanlang", reset: "Tozalash",
+                details: "Batafsil Tahlil", selMsg: "Ma'lumotlar ko'rish uchun filtrlarni tanlang", all: "— Barchasi —",
+                kpiTop: "Eng Yuqori Ball", kpiAvg: "O'rtacha Ball", kpiCount: "Banklar Soni",
+                kpiMarket: "Bozor bo'yicha", kpiActive: "Faol ishtirokchilar",
+                chartTrend: "Dinamika", chartRadar: "Ko'rsatkichlar (P1-P4)",
+                tableHeader: "Reyting Jadvali",
+                thBank: "Bank", thPeriod: "Davr", thScore: "Yakuniy ball", thGrade: "Reyting",
+                p1_title: "P1: (Vaqt bilan bog'liq)", p2_title: "P2: (Salomlashish va xayrlashish)", p3_title: "P3: (So'zlashuv odobi)", p4_title: "P4: (Muammo yechimi)",
+                p1_chart: ["P1", "(Vaqt)"], p2_chart: ["P2", "(Salomlashish)"], p3_chart: ["P3", "(Odob)"], p4_chart: ["P4", "(Yechim)"],
+                final: "Yakuniy ball:",
+                posterFooter: "To'liqroq ma'lumot olish uchun Reyting Agentligi hodimlariga murojaat qiling",
+                marketAvg: "Bozor bo'yicha o'rtacha"
+            },
+            ru: {
+                title: "Анализ Колл-центров", sub: "Рейтинг коммерческих банков",
+                filter: "Фильтр", period: "Период", bankSelect: "Выберите банк", reset: "Сброс",
+                details: "Детальный Анализ", selMsg: "Выберите фильтры для просмотра данных", all: "— Все —",
+                kpiTop: "Высший Балл", kpiAvg: "Средний Балл", kpiCount: "Кол-во Банков",
+                kpiMarket: "По рынку", kpiActive: "Активные участники",
+                chartTrend: "Динамика", chartRadar: "Показатели (P1-P4)",
+                tableHeader: "Таблица Рейтинга",
+                thBank: "Банк", thPeriod: "Период", thScore: "Итоговый балл", thGrade: "Рейтинг",
+                p1_title: "P1: (Связанные со временем)", p2_title: "P2: (Приветствие и прощание)", p3_title: "P3: (Этикет общения)", p4_title: "P4: (Решение проблемы)", 
+                p1_chart: ["P1", "(Время)"], p2_chart: ["P2", "(Приветствие)"], p3_chart: ["P3", "(Этикет)"], p4_chart: ["P4", "(Решение)"],
+                final: "Итоговый балл:",
+                posterFooter: "Для получения более подробной информации обратитесь к сотрудникам Рейтингового агентства",
+                marketAvg: "Среднее по рынку"
+            },
+            en: {
+                title: "Call Center Analysis", sub: "Commercial Banks Rating",
+                filter: "Filters", period: "Period", bankSelect: "Select Bank", reset: "Reset",
+                details: "Detailed Analysis", selMsg: "Select filters to view data", all: "— All —",
+                kpiTop: "Top Score", kpiAvg: "Average Score", kpiCount: "Banks Count",
+                kpiMarket: "Market average", kpiActive: "Active participants",
+                chartTrend: "Dynamics", chartRadar: "Indicators (P1-P4)",
+                tableHeader: "Rating Table",
+                thBank: "Bank", thPeriod: "Period", thScore: "Final Score", thGrade: "Grade",
+                p1_title: "P1: (Time related)", p2_title: "P2: (Greeting and farewell)", p3_title: "P3: (Etiquette)", p4_title: "P4: (Problem solving)", 
+                p1_chart: ["P1", "(Time)"], p2_chart: ["P2", "(Greeting)"], p3_chart: ["P3", "(Etiquette)"], p4_chart: ["P4", "(Solving)"],
+                final: "Final Score:",
+                posterFooter: "Contact Rating Agency staff for more detailed information",
+                marketAvg: "Market Average"
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            startSlogans();
+        });
+
+        async function fetchData() {
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('retry-btn').style.display = 'none';
+            try {
+                let fetchUrl = JSON_URL.replace('refs/heads/', ''); 
+                const response = await fetch(fetchUrl);
+                if (!response.ok) throw new Error("HTTP error");
+                
+                const text = await response.text();
+                const cleanText = text.replace(/:\s*NaN/g, ': 0').replace(/:\s*null/g, ': 0');
+                
+                rawData = JSON.parse(cleanText);
+                processData();
+            } catch (err) {
+                console.warn("GitHub fetch failed, using internal buffer");
+                if(sourceData.length > 0) {
+                    rawData = sourceData;
+                    processData();
+                } else {
+                    document.getElementById('loader-text').innerText = "Ma'lumot yuklab bo'lmadi (" + err.message + ")";
+                    document.getElementById('retry-btn').style.display = 'block';
+                }
+            }
+        }
+
+        function processData() {
+            rawData = rawData.map(item => ({
+                ...item,
+                "Vaqt bilan bog'liq ko'rsatkichlar (P1)": parseFloat(item["Vaqt bilan bog'liq ko'rsatkichlar (P1)"]) || 0,
+                "Boshlang'ich ko'rsatkichlar (P2)": parseFloat(item["Boshlang'ich ko'rsatkichlar (P2)"]) || 0,
+                "So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)": parseFloat(item["So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)"]) || 0,
+                "Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)": parseFloat(item["Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)"]) || 0,
+                "Yakuniy ball": parseFloat(item["Yakuniy ball"]) || 0
+            })).filter(x => x["Yakuniy ball"] > 0);
+
+            document.getElementById('loader').style.display = 'none';
+            initFilters();
+            renderDashboard();
+        }
+
+        function initFilters() {
+            const periods = [...new Set(rawData.map(d => d['Davr']))].sort().reverse();
+            const pSel = document.getElementById('filter-period');
+            // Adding "All" option to period filter
+            pSel.innerHTML = `<option value="">${i18n[curLang].all}</option>`;
+            periods.forEach(p => pSel.add(new Option(p, p)));
+            
+            // Select first period by default (latest) - index 1 because index 0 is "All"
+            if(periods.length) pSel.selectedIndex = 1; 
+
+            const banks = [...new Set(rawData.map(d => d['BANK NOMI']))].sort();
+            const bSel = document.getElementById('filter-bank');
+            bSel.innerHTML = `<option value="">${i18n[curLang].all}</option>`;
+            banks.forEach(b => bSel.add(new Option(b, b)));
+        }
+
+        function getFilteredData() {
+            const period = document.getElementById('filter-period').value;
+            const bank = document.getElementById('filter-bank').value;
+            
+            return rawData.filter(d => {
+                return (!period || d['Davr'] === period) &&
+                       (!bank || d['BANK NOMI'] === bank);
+            });
+        }
+
+        function renderDashboard() {
+            // Apply language to fixed elements (labels) first
+            updateFixedLabels();
+            
+            const data = getFilteredData();
+            updateKPIs(data);
+            showBankDetails(data);
+            renderCharts();
+            renderTable(data);
+        }
+
+        function updateFixedLabels() {
+            const t = i18n[curLang];
+            const mapping = {
+                't-brand': t.title,
+                't-subtitle': t.sub,
+                't-filter': t.filter,
+                'l-period': t.period,
+                'l-bank': t.bankSelect,
+                't-reset': t.reset,
+                't-details': t.details,
+                't-select-msg': t.selMsg,
+                't-kpi-top': t.kpiTop,
+                't-kpi-avg': t.kpiAvg,
+                't-kpi-count': t.kpiCount,
+                't-kpi-market': t.kpiMarket,
+                't-kpi-active': t.kpiActive,
+                't-chart-trend': t.chartTrend,
+                't-chart-radar': t.chartRadar,
+                't-main-table': t.tableHeader,
+                't-poster-footer': t.posterFooter
+            };
+
+            for (const [id, text] of Object.entries(mapping)) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = text;
+            }
+        }
+
+        function updateKPIs(data) {
+            if(data.length > 0) {
+                let maxScore = 0, maxBank = "", sum = 0;
+                data.forEach(d => {
+                    if(d['Yakuniy ball'] > maxScore) { maxScore = d['Yakuniy ball']; maxBank = d['BANK NOMI']; }
+                    sum += d['Yakuniy ball'];
+                });
+                document.getElementById('kpi-score').innerText = maxScore.toFixed(2);
+                document.getElementById('kpi-bank').innerText = maxBank;
+                document.getElementById('kpi-avg').innerText = (sum / data.length).toFixed(2);
+                document.getElementById('kpi-count').innerText = data.length;
+            } else {
+                ['kpi-score','kpi-avg','kpi-count'].forEach(id => document.getElementById(id).innerText = "0");
+                document.getElementById('kpi-bank').innerText = "-";
+            }
+        }
+
+        function showBankDetails(data) {
+            const container = document.getElementById('indicators-container');
+            const header = document.getElementById('details-bank-name');
+            const t = i18n[curLang];
+            
+            // Determine Title & Phone
+            const selectedBank = document.getElementById('filter-bank').value;
+            let displayTitle = t.marketAvg;
+            let phoneHtml = "";
+
+            if (selectedBank) {
+                displayTitle = selectedBank;
+                // Find visible record to get phone number
+                const bankRecord = data.find(d => d['BANK NOMI'] === selectedBank);
+                // IF filtered data doesn't have it (e.g. wrong period), search globally
+                const globalRecord = rawData.find(d => d['BANK NOMI'] === selectedBank);
+                
+                const rec = bankRecord || globalRecord;
+                if(rec && rec['Raqam']) {
+                    phoneHtml = `<div class="phone-display"><i class="fa-solid fa-phone"></i> ${rec['Raqam']}</div>`;
+                }
+            }
+            
+            header.innerText = displayTitle;
+
+            // Calculate Averages
+            let avg = { p1:0, p2:0, p3:0, p4:0, final:0, count:0 };
+            data.forEach(d => {
+                avg.p1 += d["Vaqt bilan bog'liq ko'rsatkichlar (P1)"];
+                avg.p2 += d["Boshlang'ich ko'rsatkichlar (P2)"];
+                avg.p3 += d["So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)"];
+                avg.p4 += d["Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)"];
+                avg.final += d["Yakuniy ball"];
+                avg.count++;
+            });
+
+            if (avg.count === 0) {
+                container.innerHTML = `<p style="text-align:center;color:var(--text-secondary)">No Data</p>`;
+                return;
+            }
+
+            const f = (val) => (val / avg.count).toFixed(1);
+            const items = [
+                { l: t.p1_title, v: f(avg.p1), c: "#3b82f6" },
+                { l: t.p2_title, v: f(avg.p2), c: "#8b5cf6" },
+                { l: t.p3_title, v: f(avg.p3), c: "#10b981" },
+                { l: t.p4_title, v: f(avg.p4), c: "#f59e0b" }
+            ];
+
+            let html = phoneHtml;
+            items.forEach(i => {
+                html += `
+                <div class="ind-item">
+                    <div class="ind-head"><span>${i.l}</span><strong>${i.v}%</strong></div>
+                    <div class="progress-track"><div class="progress-fill" style="width:${i.v}%; background:${i.c}"></div></div>
+                </div>`;
+            });
+            html += `<div style="margin-top:15px; padding:10px; background:var(--bg-body); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:600; color:var(--text-secondary)">${t.final}</span>
+                <span style="font-weight:bold; font-size:1.1rem; color:var(--primary)">${(avg.final/avg.count).toFixed(2)}</span>
+            </div>`;
+            container.innerHTML = html;
+        }
+
+        function renderCharts() {
+            const isDark = document.body.classList.contains('dark-mode');
+            const colorTxt = isDark ? '#cbd5e1' : '#475569';
+            const colorGrid = isDark ? '#334155' : '#e2e8f0';
+            const t = i18n[curLang];
+
+            // 1. Trend
+            const selectedBank = document.getElementById('filter-bank').value;
+            const trendData = rawData.filter(d => !selectedBank || d['BANK NOMI'] === selectedBank);
+            
+            const periods = {};
+            trendData.forEach(d => {
+                if(!periods[d['Davr']]) periods[d['Davr']] = {sum:0, cnt:0};
+                periods[d['Davr']].sum += d['Yakuniy ball'];
+                periods[d['Davr']].cnt++;
+            });
+            
+            const allKeys = Object.keys(periods).sort();
+            const keys = allKeys.slice(-12);
+            const vals = keys.map(k => (periods[k].sum / periods[k].cnt).toFixed(2));
+
+            if(trendChartInstance) trendChartInstance.destroy();
+            trendChartInstance = new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: keys,
+                    datasets: [{
+                        label: t.kpiAvg,
+                        data: vals,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true, tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks:{color:colorTxt}, grid:{display:false} },
+                        y: { ticks:{color:colorTxt}, grid:{color:colorGrid}, min:50, max:100 }
+                    },
+                    plugins: { legend: {display:false} }
+                }
+            });
+
+            // 2. Radar
+            const currentData = getFilteredData();
+            let p1=0, p2=0, p3=0, p4=0, count=0;
+            currentData.forEach(d => {
+                p1 += d["Vaqt bilan bog'liq ko'rsatkichlar (P1)"];
+                p2 += d["Boshlang'ich ko'rsatkichlar (P2)"];
+                p3 += d["So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)"];
+                p4 += d["Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)"];
+                count++;
+            });
+            const radarVals = count ? [p1/count, p2/count, p3/count, p4/count] : [0,0,0,0];
+            
+            // Scaled split labels for Radar Chart
+            const rLabels = [t.p1_chart, t.p2_chart, t.p3_chart, t.p4_chart];
+
+            if(radarChartInstance) radarChartInstance.destroy();
+            radarChartInstance = new Chart(document.getElementById('radarChart'), {
+                type: 'radar',
+                data: {
+                    labels: rLabels,
+                    datasets: [{
+                        label: 'Avg',
+                        data: radarVals,
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderColor: '#10b981',
+                        pointBackgroundColor: '#10b981'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {color: colorGrid},
+                            grid: {color: colorGrid},
+                            pointLabels: {
+                                color: colorTxt, 
+                                font:{size:10}, 
+                                callback: function(value) { return value }
+                            },
+                            suggestedMin: 50, suggestedMax: 100
+                        }
+                    },
+                    plugins: { legend: {display:false} }
+                }
+            });
+        }
+
+        function getGradeInfo(score) {
+            if (score >= 94) return { cls: 'grade-AAA', label: 'AAA' };
+            if (score >= 88) return { cls: 'grade-AA', label: 'AA' };
+            if (score >= 82) return { cls: 'grade-A', label: 'A' };
+            if (score >= 76) return { cls: 'grade-BBB', label: 'BBB' };
+            if (score >= 70) return { cls: 'grade-BB', label: 'BB' };
+            if (score >= 64) return { cls: 'grade-B', label: 'B' };
+            if (score >= 58) return { cls: 'grade-CCC', label: 'CCC' };
+            if (score >= 52) return { cls: 'grade-CC', label: 'CC' };
+            if (score >= 46) return { cls: 'grade-C', label: 'C' };
+            return { cls: 'grade-D', label: 'D' };
+        }
+
+        function renderTable(data) {
+            const table = document.getElementById('ratingTable');
+            const thead = table.querySelector('thead');
+            const tbody = document.getElementById('tableBody');
+            const t = i18n[curLang];
+
+            // Rebuild Header to ensure translation matches
+            thead.innerHTML = `
+                <tr>
+                    <th onclick="sortTable('BANK NOMI')" id="th-bank">${t.thBank} <i class="fa-solid fa-sort"></i></th>
+                    <th onclick="sortTable('Davr')" class="text-center" id="th-period">${t.thPeriod} <i class="fa-solid fa-sort"></i></th>
+                    <th onclick="sortTable('Vaqt bilan bog\\'liq ko\\'rsatkichlar (P1)')" class="text-center" id="th-p1">${t.p1_chart[0]} <i class="fa-solid fa-sort"></i></th>
+                    <th onclick="sortTable('Boshlang\\'ich ko\\'rsatkichlar (P2)')" class="text-center" id="th-p2">${t.p2_chart[0]} <i class="fa-solid fa-sort"></i></th>
+                    <th onclick="sortTable('So\\'zlashuv odobi bilan bog\\'liq ko\\'rsatkichlar (P3)')" class="text-center" id="th-p3">${t.p3_chart[0]} <i class="fa-solid fa-sort"></i></th>
+                    <th onclick="sortTable('Muammoga yechim topish bilan bog\\'liq ko\\'rsatkichlar (P4)')" class="text-center" id="th-p4">${t.p4_chart[0]} <i class="fa-solid fa-sort"></i></th>
+                    <th onclick="sortTable('Yakuniy ball')" class="text-center" id="th-score">${t.thScore} <i class="fa-solid fa-sort"></i></th>
+                    <th onclick="sortTable('REYTING BAHOSI')" class="text-center" id="th-grade">${t.thGrade} <i class="fa-solid fa-sort"></i></th>
+                </tr>
+            `;
+            
+            data.sort((a,b) => {
+                let va = a[sortCol], vb = b[sortCol];
+                if(typeof va === 'string') { va=va.toLowerCase(); vb=vb.toLowerCase(); }
+                if(va < vb) return sortAsc ? -1 : 1;
+                if(va > vb) return sortAsc ? 1 : -1;
+                return 0;
+            });
+
+            let html = "";
+            data.forEach(row => {
+                const score = row['Yakuniy ball'];
+                const gradeInfo = getGradeInfo(score);
+                const ratingTxt = row['REYTING BAHOSI'] || `(uz) ${gradeInfo.label}`;
+
+                html += `
+                <tr>
+                    <td style="font-weight:600">${row['BANK NOMI']}</td>
+                    <td class="text-center">${row['Davr']}</td>
+                    <td class="text-center">${row["Vaqt bilan bog'liq ko'rsatkichlar (P1)"].toFixed(1)}</td>
+                    <td class="text-center">${row["Boshlang'ich ko'rsatkichlar (P2)"].toFixed(1)}</td>
+                    <td class="text-center">${row["So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)"].toFixed(1)}</td>
+                    <td class="text-center">${row["Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)"].toFixed(1)}</td>
+                    <td class="text-center" style="font-weight:bold; color:var(--primary);">${score.toFixed(2)}</td>
+                    <td class="text-center"><span class="rating-badge ${gradeInfo.cls}">${ratingTxt}</span></td>
+                </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+            document.getElementById('row-count').innerText = `Total: ${data.length}`;
+        }
+
+        function sortTable(key) {
+            if(sortCol === key) sortAsc = !sortAsc;
+            else { sortCol = key; sortAsc = false; }
+            renderDashboard();
+        }
+
+        function startSlogans() {
+            const box = document.getElementById('slogan-box');
+            let idx = 0;
+            const update = () => {
+                box.classList.remove('slogan-visible');
+                setTimeout(() => {
+                    const list = slogans[curLang]; 
+                    if(list && list.length > 0) {
+                        box.innerText = list[idx % list.length];
+                        box.classList.add('slogan-visible');
+                        idx++;
+                    }
+                }, 500);
+            };
+            update();
+            setInterval(update, 4000);
+        }
+
+        function setLang(lang) {
+            curLang = lang;
+            document.querySelectorAll('.active-lang').forEach(el=>el.classList.remove('active-lang'));
+            document.getElementById('btn-'+lang).classList.add('active-lang');
+            
+            const t = i18n[lang];
+            
+            // Only update the "All" option text without destroying options
+            const bSelect = document.getElementById('filter-bank');
+            if(bSelect && bSelect.options.length > 0) {
+                bSelect.options[0].text = t.all;
+            }
+            const pSelect = document.getElementById('filter-period');
+            if(pSelect && pSelect.options.length > 0) {
+                pSelect.options[0].text = t.all;
+            }
+
+            renderDashboard();
+        }
+
+        function resetFilters() {
+            const pSel = document.getElementById('filter-period');
+            // Back to latest (index 1) if available, otherwise index 0
+            if(pSel.options.length > 1) pSel.selectedIndex = 1;
+            else pSel.selectedIndex = 0;
+            
+            document.getElementById('filter-bank').value = "";
+            renderDashboard();
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            renderDashboard(); 
+        }
+
+        function exportToExcel() {
+            const table = document.getElementById('ratingTable');
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Ratings"});
+            XLSX.writeFile(wb, `Rating_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+    </script>
+</body>
+</html>
