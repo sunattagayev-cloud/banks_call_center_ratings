@@ -72,8 +72,9 @@
         .header-inner {
             max-width: 1400px; margin: 0 auto; padding: 0 20px;
             display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px;
         }
-        .brand-box h1 { margin: 0; font-size: 1.3rem; color: var(--primary); display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        .brand-box h1 { margin: 0; font-size: 1.3rem; color: var(--primary); display: flex; align-items: center; gap: 10px; font-weight: 700; white-space: nowrap;}
         .source-badge { font-size: 0.75rem; color: var(--text-secondary); display: block; margin-top: 4px; font-weight: 500;}
 
         .btn-icon {
@@ -89,7 +90,53 @@
             max-width: 1400px; margin: 25px auto; padding: 0 20px;
             display: grid; grid-template-columns: 320px 1fr; gap: 25px;
         }
-        @media (max-width: 1024px) { .container { grid-template-columns: 1fr; } }
+
+        /* Mobile specific Toggle Button */
+        .mobile-filter-btn {
+            display: none; /* Hidden on desktop */
+            width: 100%; 
+            padding: 12px; 
+            background: var(--bg-card); 
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--primary);
+            font-weight: 600;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        /* Mobile Layout Adjustments */
+        @media (max-width: 1024px) { 
+            .container { display: block; } /* Remove grid, stack items */
+            
+            /* Hide sidebar by default on mobile */
+            .sidebar { 
+                display: none; 
+                margin-bottom: 25px;
+            }
+            /* Class to show sidebar when toggled */
+            .sidebar.active { 
+                display: block; 
+                animation: slideDown 0.3s ease-out;
+            }
+            
+            .mobile-filter-btn { display: flex; }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .header-inner { flex-direction: column; align-items: flex-start; }
+            .header-inner > div { width: 100%; justify-content: space-between; display: flex; }
+            .brand-box { margin-bottom: 10px; }
+        }
 
         /* Cards */
         .card {
@@ -98,7 +145,7 @@
         }
         
         /* Sidebar Elements */
-        .sidebar { position: sticky; top: 85px; height: fit-content; }
+        .sidebar-inner { position: sticky; top: 85px; height: fit-content; }
         .form-select {
             width: 100%; padding: 10px; border-radius: 8px;
             border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main);
@@ -146,28 +193,33 @@
         .progress-track { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
 
-        /* KPI Layout - Updated to match Charts Row (2fr 1fr) */
+        /* KPI Layout */
         .kpi-aligned-row {
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 25px;
             margin-bottom: 25px;
         }
+        /* Mobile KPI: Stack them, but make the left group 2-columns (compact) */
         @media (max-width: 900px) {
-            .kpi-aligned-row { grid-template-columns: 1fr; }
+            .kpi-aligned-row { grid-template-columns: 1fr; gap: 15px; }
         }
 
-        /* The Left Group (KPI 1 & 2) needs to split internally */
         .kpi-group-left {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 25px;
         }
-        @media (max-width: 600px) {
-            .kpi-group-left { grid-template-columns: 1fr; }
+        @media (max-width: 900px) {
+            /* On mobile/tablet, keep them side-by-side but smaller gap */
+            .kpi-group-left { gap: 15px; }
+        }
+        @media (max-width: 480px) {
+            /* On very small screens, maybe stack? No, side-by-side is usually OK for simple stats */
+             .kpi-group-left { gap: 10px; }
+             .stat-card { padding: 15px; } /* Less padding */
         }
 
-        /* The Right Group (KPI 3) takes full height of its cell */
         .kpi-group-right .stat-card {
             height: 100%;
             box-sizing: border-box;
@@ -183,22 +235,29 @@
         }
         .stat-icon {
             width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+            flex-shrink: 0; margin-left: 10px;
         }
 
         /* Charts */
         .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 25px; }
-        @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; gap: 15px; } }
         .chart-container { position: relative; height: 320px; width: 100%; }
+        @media (max-width: 600px) { .chart-container { height: 260px; } }
 
-        /* Table & Badges generally */
-        .table-responsive { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+        /* Table & Badges */
+        .table-responsive { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        /* Make table header slightly smaller on mobile */
+        @media (max-width: 600px) {
+            table { min-width: 800px; font-size: 0.85rem; }
+            th, td { padding: 8px 10px; }
+        }
+
         th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
         th { background: var(--bg-body); font-weight: 600; color: var(--text-secondary); white-space: nowrap; cursor: pointer; text-align: left;}
         th:hover { background: rgba(0,0,0,0.05); }
         th.text-center, td.text-center { text-align: center; }
 
-        /* Shared Badge Classes */
         .rating-badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; color: #fff; display: inline-block; min-width: 60px; text-align: center; }
         
         .grade-AAA { background-color: #166534; } 
@@ -218,15 +277,9 @@
         }
 
         /* Scale Table (Sidebar) Specifics */
-        .scale-table-wrap {
-            font-size: 0.8rem;
-        }
-        .scale-table-wrap table {
-            min-width: unset; width: 100%;
-        }
-        .scale-table-wrap th, .scale-table-wrap td {
-            padding: 8px;
-        }
+        .scale-table-wrap { font-size: 0.8rem; }
+        .scale-table-wrap table { min-width: unset; width: 100%; }
+        .scale-table-wrap th, .scale-table-wrap td { padding: 8px; }
         .scale-badge-small {
             padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; color: white;
             font-weight: 600; display: inline-block; width: 55px; text-align: center;
@@ -274,95 +327,83 @@
 
     <div class="container">
         
+        <!-- Mobile Toggle Button -->
+        <button class="mobile-filter-btn" onclick="toggleSidebar()">
+            <i class="fa-solid fa-bars-staggered"></i> <span id="t-mobile-menu">Filtrlar va Ma'lumotlar</span>
+        </button>
+
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="card">
-                <h3><i class="fa-solid fa-filter"></i> <span id="t-filter">Filtrlash</span></h3>
-                
-                <label id="l-period" style="font-size:0.8rem; color:var(--text-secondary)">Davr</label>
-                <select id="filter-period" class="form-select" onchange="renderDashboard()">
-                    <!-- JS fills this -->
-                </select>
-
-                <label id="l-bank" style="font-size:0.8rem; color:var(--text-secondary)">Bankni tanlang</label>
-                <select id="filter-bank" class="form-select" onchange="renderDashboard()">
-                    <option value="">— Barchasi —</option>
-                    <!-- JS fills this -->
-                </select>
-
-                <button class="btn-icon" style="width:100%; border-radius:8px; gap:8px;" onclick="resetFilters()">
-                    <i class="fa-solid fa-rotate-right"></i> <span id="t-reset">Tozalash</span>
-                </button>
-            </div>
-
-            <div class="card">
-                <h3><i class="fa-solid fa-chart-pie"></i> <span id="t-details">Batafsil Tahlil</span></h3>
-                
-                <div id="bank-info-header" style="margin-bottom: 10px;">
-                    <h4 id="details-bank-name" style="margin: 0; color: var(--primary);"></h4>
-                </div>
-                
-                <div id="indicators-container" style="margin-top:10px;">
-                    <!-- JS fills this -->
-                </div>
-            </div>
-
-            <!-- Promo Card -->
-            <div class="card promo-card">
-                <div class="promo-bg-circle"></div>
-                <div style="position:relative; z-index:2; padding-top:10px;">
-                    <img src="https://snsratings.uz/static/media/logo.b58a119151d230b7d82af1dfaf415791.svg" class="promo-logo-img" alt="SNS Ratings">
+        <aside class="sidebar" id="main-sidebar">
+            <div class="sidebar-inner">
+                <div class="card">
+                    <h3><i class="fa-solid fa-filter"></i> <span id="t-filter">Filtrlash</span></h3>
                     
-                    <div class="slogan-box" id="slogan-box">
-                        Standard and Sensitive Ratings
-                    </div>
+                    <label id="l-period" style="font-size:0.8rem; color:var(--text-secondary)">Davr</label>
+                    <select id="filter-period" class="form-select" onchange="renderDashboard()">
+                        <!-- JS fills this -->
+                    </select>
 
-                    <div class="social-row">
-                        <a href="https://t.me/snsratings" target="_blank" class="social-btn">
-                            <i class="fa-brands fa-telegram"></i> Telegram
-                        </a>
-                        <a href="https://snsratings.uz/" target="_blank" class="social-btn">
-                            <i class="fa-solid fa-globe"></i> Web
-                        </a>
-                    </div>
+                    <label id="l-bank" style="font-size:0.8rem; color:var(--text-secondary)">Bankni tanlang</label>
+                    <select id="filter-bank" class="form-select" onchange="renderDashboard()">
+                        <option value="">— Barchasi —</option>
+                        <!-- JS fills this -->
+                    </select>
 
-                    <p class="contact-info" id="t-poster-footer">
-                        To'liqroq ma'lumot olish uchun Reyting Agentligi hodimlariga murojaat qiling
-                    </p>
+                    <button class="btn-icon" style="width:100%; border-radius:8px; gap:8px;" onclick="resetFilters()">
+                        <i class="fa-solid fa-rotate-right"></i> <span id="t-reset">Tozalash</span>
+                    </button>
                 </div>
-            </div>
 
-            <!-- New Scale Table Card -->
-            <div class="card">
-                <!-- Scale Content -->
-                <h4 style="margin:0 0 10px 0; font-size:1rem;"><i class="fa-solid fa-ruler-combined"></i> <span id="t-scale-title">Reyting Shkalasi</span></h4>
-                <div class="scale-table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th id="th-scale-score">Ball</th>
-                                <th id="th-scale-rating">Reyting</th>
-                                <th id="th-scale-desc">Tavsif</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scale-tbody">
-                            <!-- Populated by JS for translations -->
-                        </tbody>
-                    </table>
+                <div class="card">
+                    <h3><i class="fa-solid fa-chart-pie"></i> <span id="t-details">Batafsil Tahlil</span></h3>
+                    <div id="bank-info-header" style="margin-bottom: 10px;">
+                        <h4 id="details-bank-name" style="margin: 0; color: var(--primary);"></h4>
+                    </div>
+                    <div id="indicators-container" style="margin-top:10px;"></div>
                 </div>
-            </div>
 
-            <!-- Legal Disclaimer -->
-            <div class="legal-disclaimer" id="t-disclaimer">
-                Reyting bahosi — bu agentlikning fikri bo'lib, tasdiqlangan fakt emas. Biz investitsiya bo'yicha tavsiyalar bermaymiz hamda qimmatli qog'ozlar va boshqa aktivlarni sotib olish, sotish yoki saqlashga chaqirmaymiz.
+                <!-- Promo Card -->
+                <div class="card promo-card">
+                    <div class="promo-bg-circle"></div>
+                    <div style="position:relative; z-index:2; padding-top:10px;">
+                        <img src="https://snsratings.uz/static/media/logo.b58a119151d230b7d82af1dfaf415791.svg" class="promo-logo-img" alt="SNS Ratings">
+                        <div class="slogan-box" id="slogan-box">Standard and Sensitive Ratings</div>
+                        <div class="social-row">
+                            <a href="https://t.me/snsratings" target="_blank" class="social-btn"><i class="fa-brands fa-telegram"></i> Telegram</a>
+                            <a href="https://snsratings.uz/" target="_blank" class="social-btn"><i class="fa-solid fa-globe"></i> Web</a>
+                        </div>
+                        <p class="contact-info" id="t-poster-footer">To'liqroq ma'lumot olish uchun Reyting Agentligi hodimlariga murojaat qiling</p>
+                    </div>
+                </div>
+
+                <!-- Scale Table Card -->
+                <div class="card">
+                    <h4 style="margin:0 0 10px 0; font-size:1rem;"><i class="fa-solid fa-ruler-combined"></i> <span id="t-scale-title">Reyting Shkalasi</span></h4>
+                    <div class="scale-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th id="th-scale-score">Ball</th>
+                                    <th id="th-scale-rating">Reyting</th>
+                                    <th id="th-scale-desc">Tavsif</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scale-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="legal-disclaimer" id="t-disclaimer">
+                    Reyting bahosi — bu agentlikning fikri bo'lib, tasdiqlangan fakt emas.
+                </div>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main>
-            <!-- KPI Aligned Row (2fr 1fr pattern to match charts) -->
+            <!-- KPI Aligned Row -->
             <div class="kpi-aligned-row">
-                <!-- Left Group: Trends/Scores matching the Wide Chart -->
+                <!-- Left Group (2 columns on mobile) -->
                 <div class="kpi-group-left">
                     <div class="stat-card">
                         <div>
@@ -387,7 +428,7 @@
                     </div>
                 </div>
 
-                <!-- Right Group: Counts matching Radar Chart -->
+                <!-- Right Group -->
                 <div class="kpi-group-right">
                     <div class="stat-card">
                         <div>
@@ -428,10 +469,8 @@
                 </div>
                 <div class="table-responsive">
                     <table id="ratingTable">
-                        <thead>
-                            <!-- Generated by JS -->
-                        </thead>
-                        <tbody id="tableBody"> <!-- Content --> </tbody>
+                        <thead><!-- JS --></thead>
+                        <tbody id="tableBody"><!-- JS --></tbody>
                     </table>
                 </div>
                 <div style="margin-top:10px; text-align:right; font-size:0.8rem; color:var(--text-secondary);" id="row-count"></div>
@@ -445,17 +484,16 @@
     </div>
 
     <script>
-        // Updated data link
+        // Data & Logic
         const JSON_URL = "https://raw.githubusercontent.com/sunattagayev-cloud/banks_call_center_ratings/refs/heads/main/Call_center_banks.json";
         
-        // Embedded data for fallback
         const sourceData = [
     {"Davr":"2025_10","BANK NOMI":"ANOR BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.96,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.82,"REYTING BAHOSI":"(uz) AAA"},
     {"Davr":"2025_10","BANK NOMI":"MIKROKREDITBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.42,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.66,"REYTING BAHOSI":"(uz) AAA"},
     {"Davr":"2025_10","BANK NOMI":"DAVR-BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.92,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.51,"REYTING BAHOSI":"(uz) AAA"},
     {"Davr":"2025_10","BANK NOMI":"TURONBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":99.67,"Boshlang'ich ko'rsatkichlar (P2)":96.33,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.2,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":94.4,"Yakuniy ball":96.49,"REYTING BAHOSI":"(uz) AAA"},
     {"Davr":"2025_10","BANK NOMI":"ZIRAAT BANK UZBEKISTAN","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.46,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.24,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.45,"REYTING BAHOSI":"(uz) AAA"},
-    {"Davr":"2025_10","BANK NOMI":"TRASTBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.58,"Boshlang'ich ko'rsatkichlar (P2)":96.0,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.24,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.43,"REYTING BAHOSI":"(uz) AAA"},
+    {"Davr":"2025_10","BANK NOMI":"TraSTBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.58,"Boshlang'ich ko'rsatkichlar (P2)":96.0,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.24,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.43,"REYTING BAHOSI":"(uz) AAA"},
     {"Davr":"2025_10","BANK NOMI":"TBC BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":98.04,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.8,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.0,"Yakuniy ball":96.39,"REYTING BAHOSI":"(uz) AAA"},
     {"Davr":"2025_10","BANK NOMI":"OCTOBANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.96,"Boshlang'ich ko'rsatkichlar (P2)":96.4,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.36,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.33,"REYTING BAHOSI":"(uz) AAA"},
     {"Davr":"2025_10","BANK NOMI":"ORIENT FINANS BANK","Vaqt bilan bog'liq ko'rsatkichlar (P1)":97.33,"Boshlang'ich ko'rsatkichlar (P2)":96.53,"So'zlashuv odobi bilan bog'liq ko'rsatkichlar (P3)":95.68,"Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)":95.8,"Yakuniy ball":96.29,"REYTING BAHOSI":"(uz) AAA"},
@@ -530,7 +568,8 @@
                 posterFooter: "To'liqroq ma'lumot olish uchun Reyting Agentligi hodimlariga murojaat qiling",
                 marketAvg: "Bozor bo'yicha o'rtacha",
                 scaleTitle: "Reyting Shkalasi", thRange: "Ball", thRating: "Reyting", thDesc: "Tavsif",
-                disclaimer: "Reyting bahosi — bu agentlikning fikri bo'lib, tasdiqlangan fakt emas. Biz investitsiya bo'yicha tavsiyalar bermaymiz hamda qimmatli qog'ozlar va boshqa aktivlarni sotib olish, sotish yoki saqlashga chaqirmaymiz."
+                disclaimer: "Reyting bahosi — bu agentlikning fikri bo'lib, tasdiqlangan fakt emas. Biz investitsiya bo'yicha tavsiyalar bermaymiz hamda qimmatli qog'ozlar va boshqa aktivlarni sotib olish, sotish yoki saqlashga chaqirmaymiz.",
+                mobileMenu: "Filtrlar va Ma'lumotlar"
             },
             ru: {
                 title: "Анализ Колл-центров", sub: "Рейтинг коммерческих банков",
@@ -547,7 +586,8 @@
                 posterFooter: "Для получения более подробной информации обратитесь к сотрудникам Рейтингового агентства",
                 marketAvg: "Среднее по рынку",
                 scaleTitle: "Шкала Рейтинга", thRange: "Балл", thRating: "Рейтинг", thDesc: "Описание",
-                disclaimer: "Рейтинговая оценка — это мнение агентства, а не установленный факт. Мы не даём инвестиционных рекомендаций и не призываем покупать, продавать или держать ценные бумаги и иные активы."
+                disclaimer: "Рейтинговая оценка — это мнение агентства, а не установленный факт. Мы не даём инвестиционных рекомендаций и не призываем покупать, продавать или держать ценные бумаги и иные активы.",
+                mobileMenu: "Фильтры и Информация"
             },
             en: {
                 title: "Call Center Analysis", sub: "Commercial Banks Rating",
@@ -564,7 +604,8 @@
                 posterFooter: "Contact Rating Agency staff for more detailed information",
                 marketAvg: "Market Average",
                 scaleTitle: "Rating Scale", thRange: "Score", thRating: "Grade", thDesc: "Description",
-                disclaimer: "A credit rating is an opinion of the agency, not a statement of fact. We do not provide investment recommendations and do not urge to buy, sell, or hold securities and other assets."
+                disclaimer: "A credit rating is an opinion of the agency, not a statement of fact. We do not provide investment recommendations and do not urge to buy, sell, or hold securities and other assets.",
+                mobileMenu: "Filters and Info"
             }
         };
 
@@ -573,6 +614,10 @@
             startSlogans();
             renderScaleTable();
         });
+
+        function toggleSidebar() {
+            document.getElementById('main-sidebar').classList.toggle('active');
+        }
 
         async function fetchData() {
             document.getElementById('loader').style.display = 'flex';
@@ -617,11 +662,8 @@
         function initFilters() {
             const periods = [...new Set(rawData.map(d => d['Davr']))].sort().reverse();
             const pSel = document.getElementById('filter-period');
-            // Adding "All" option to period filter
             pSel.innerHTML = `<option value="">${i18n[curLang].all}</option>`;
             periods.forEach(p => pSel.add(new Option(p, p)));
-            
-            // Select first period by default (latest)
             if(periods.length) pSel.selectedIndex = 1; 
 
             const banks = [...new Set(rawData.map(d => d['BANK NOMI']))].sort();
@@ -633,18 +675,12 @@
         function getFilteredData() {
             const period = document.getElementById('filter-period').value;
             const bank = document.getElementById('filter-bank').value;
-            
-            return rawData.filter(d => {
-                return (!period || d['Davr'] === period) &&
-                       (!bank || d['BANK NOMI'] === bank);
-            });
+            return rawData.filter(d => (!period || d['Davr'] === period) && (!bank || d['BANK NOMI'] === bank));
         }
 
         function renderDashboard() {
-            // Apply language to fixed elements (labels) first
             updateFixedLabels();
-            renderScaleTable(); // Re-render scale to update language
-            
+            renderScaleTable(); 
             const data = getFilteredData();
             updateKPIs(data);
             showBankDetails(data);
@@ -655,29 +691,15 @@
         function updateFixedLabels() {
             const t = i18n[curLang];
             const mapping = {
-                't-brand': t.title,
-                't-subtitle': t.sub,
-                't-filter': t.filter,
-                'l-period': t.period,
-                'l-bank': t.bankSelect,
-                't-reset': t.reset,
-                't-details': t.details,
-                't-kpi-top': t.kpiTop,
-                't-kpi-avg': t.kpiAvg,
-                't-kpi-count': t.kpiCount,
-                't-kpi-market': t.kpiMarket,
-                't-kpi-active': t.kpiActive,
-                't-chart-trend': t.chartTrend,
-                't-chart-radar': t.chartRadar,
-                't-main-table': t.tableHeader,
-                't-poster-footer': t.posterFooter,
-                't-scale-title': t.scaleTitle,
-                'th-scale-score': t.thRange,
-                'th-scale-rating': t.thRating,
-                'th-scale-desc': t.thDesc,
-                't-disclaimer': t.disclaimer
+                't-brand': t.title, 't-subtitle': t.sub, 't-filter': t.filter,
+                'l-period': t.period, 'l-bank': t.bankSelect, 't-reset': t.reset,
+                't-details': t.details, 't-kpi-top': t.kpiTop, 't-kpi-avg': t.kpiAvg,
+                't-kpi-count': t.kpiCount, 't-kpi-market': t.kpiMarket, 't-kpi-active': t.kpiActive,
+                't-chart-trend': t.chartTrend, 't-chart-radar': t.chartRadar, 't-main-table': t.tableHeader,
+                't-poster-footer': t.posterFooter, 't-scale-title': t.scaleTitle,
+                'th-scale-score': t.thRange, 'th-scale-rating': t.thRating, 'th-scale-desc': t.thDesc,
+                't-disclaimer': t.disclaimer, 't-mobile-menu': t.mobileMenu
             };
-
             for (const [id, text] of Object.entries(mapping)) {
                 const el = document.getElementById(id);
                 if (el) el.innerText = text;
@@ -719,28 +741,18 @@
             const container = document.getElementById('indicators-container');
             const header = document.getElementById('details-bank-name');
             const t = i18n[curLang];
-            
-            // Determine Title & Phone
             const selectedBank = document.getElementById('filter-bank').value;
             let displayTitle = t.marketAvg;
             let phoneHtml = "";
 
             if (selectedBank) {
                 displayTitle = selectedBank;
-                // Find visible record to get phone number
-                const bankRecord = data.find(d => d['BANK NOMI'] === selectedBank);
-                // IF filtered data doesn't have it (e.g. wrong period), search globally
-                const globalRecord = rawData.find(d => d['BANK NOMI'] === selectedBank);
-                
-                const rec = bankRecord || globalRecord;
+                const rec = data.find(d => d['BANK NOMI'] === selectedBank) || rawData.find(d => d['BANK NOMI'] === selectedBank);
                 if(rec && rec['Raqam']) {
                     phoneHtml = `<div class="phone-display"><i class="fa-solid fa-phone"></i> ${rec['Raqam']}</div>`;
                 }
             }
-            
             header.innerText = displayTitle;
-
-            // Calculate Averages
             let avg = { p1:0, p2:0, p3:0, p4:0, final:0, count:0 };
             data.forEach(d => {
                 avg.p1 += d["Vaqt bilan bog'liq ko'rsatkichlar (P1)"];
@@ -784,20 +796,17 @@
             const colorTxt = isDark ? '#cbd5e1' : '#475569';
             const colorGrid = isDark ? '#334155' : '#e2e8f0';
             const t = i18n[curLang];
-
-            // 1. Trend
             const selectedBank = document.getElementById('filter-bank').value;
             const trendData = rawData.filter(d => !selectedBank || d['BANK NOMI'] === selectedBank);
             
+            // Trend
             const periods = {};
             trendData.forEach(d => {
                 if(!periods[d['Davr']]) periods[d['Davr']] = {sum:0, cnt:0};
                 periods[d['Davr']].sum += d['Yakuniy ball'];
                 periods[d['Davr']].cnt++;
             });
-            
-            const allKeys = Object.keys(periods).sort();
-            const keys = allKeys.slice(-12);
+            const keys = Object.keys(periods).sort().slice(-12);
             const vals = keys.map(k => (periods[k].sum / periods[k].cnt).toFixed(2));
 
             if(trendChartInstance) trendChartInstance.destroy();
@@ -805,13 +814,7 @@
                 type: 'line',
                 data: {
                     labels: keys,
-                    datasets: [{
-                        label: t.kpiAvg,
-                        data: vals,
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        fill: true, tension: 0.3
-                    }]
+                    datasets: [{ label: t.kpiAvg, data: vals, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.3 }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
@@ -823,7 +826,7 @@
                 }
             });
 
-            // 2. Radar
+            // Radar
             const currentData = getFilteredData();
             let p1=0, p2=0, p3=0, p4=0, count=0;
             currentData.forEach(d => {
@@ -834,8 +837,6 @@
                 count++;
             });
             const radarVals = count ? [p1/count, p2/count, p3/count, p4/count] : [0,0,0,0];
-            
-            // Scaled split labels for Radar Chart
             const rLabels = [t.p1_chart, t.p2_chart, t.p3_chart, t.p4_chart];
 
             if(radarChartInstance) radarChartInstance.destroy();
@@ -843,25 +844,14 @@
                 type: 'radar',
                 data: {
                     labels: rLabels,
-                    datasets: [{
-                        label: 'Avg',
-                        data: radarVals,
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                        borderColor: '#10b981',
-                        pointBackgroundColor: '#10b981'
-                    }]
+                    datasets: [{ label: 'Avg', data: radarVals, backgroundColor: 'rgba(16, 185, 129, 0.2)', borderColor: '#10b981', pointBackgroundColor: '#10b981' }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     scales: {
                         r: {
-                            angleLines: {color: colorGrid},
-                            grid: {color: colorGrid},
-                            pointLabels: {
-                                color: colorTxt, 
-                                font:{size:10}, 
-                                callback: function(value) { return value }
-                            },
+                            angleLines: {color: colorGrid}, grid: {color: colorGrid},
+                            pointLabels: { color: colorTxt, font:{size:10}, callback: function(value) { return value } },
                             suggestedMin: 50, suggestedMax: 100
                         }
                     },
@@ -889,7 +879,6 @@
             const tbody = document.getElementById('tableBody');
             const t = i18n[curLang];
 
-            // Rebuild Header to ensure translation matches
             thead.innerHTML = `
                 <tr>
                     <th onclick="sortTable('BANK NOMI')" id="th-bank">${t.thBank} <i class="fa-solid fa-sort"></i></th>
@@ -916,9 +905,7 @@
                 const score = row['Yakuniy ball'];
                 const gradeInfo = getGradeInfo(score);
                 const ratingTxt = row['REYTING BAHOSI'] || `(uz) ${gradeInfo.label}`;
-
-                html += `
-                <tr>
+                html += `<tr>
                     <td style="font-weight:600">${row['BANK NOMI']}</td>
                     <td class="text-center">${row['Davr']}</td>
                     <td class="text-center">${row["Vaqt bilan bog'liq ko'rsatkichlar (P1)"].toFixed(1)}</td>
@@ -927,8 +914,7 @@
                     <td class="text-center">${row["Muammoga yechim topish bilan bog'liq ko'rsatkichlar (P4)"].toFixed(1)}</td>
                     <td class="text-center" style="font-weight:bold; color:var(--primary);">${score.toFixed(2)}</td>
                     <td class="text-center"><span class="rating-badge ${gradeInfo.cls}">${ratingTxt}</span></td>
-                </tr>
-                `;
+                </tr>`;
             });
             tbody.innerHTML = html;
             document.getElementById('row-count').innerText = `Total: ${data.length}`;
@@ -962,37 +948,22 @@
             curLang = lang;
             document.querySelectorAll('.active-lang').forEach(el=>el.classList.remove('active-lang'));
             document.getElementById('btn-'+lang).classList.add('active-lang');
-            
             const t = i18n[lang];
-            
-            // Only update the "All" option text without destroying options
             const bSelect = document.getElementById('filter-bank');
-            if(bSelect && bSelect.options.length > 0) {
-                bSelect.options[0].text = t.all;
-            }
+            if(bSelect && bSelect.options.length > 0) bSelect.options[0].text = t.all;
             const pSelect = document.getElementById('filter-period');
-            if(pSelect && pSelect.options.length > 0) {
-                pSelect.options[0].text = t.all;
-            }
-
+            if(pSelect && pSelect.options.length > 0) pSelect.options[0].text = t.all;
             renderDashboard();
         }
 
         function resetFilters() {
             const pSel = document.getElementById('filter-period');
-            // Back to latest
-            if(pSel.options.length > 1) pSel.selectedIndex = 1;
-            else pSel.selectedIndex = 0;
-            
+            if(pSel.options.length > 1) pSel.selectedIndex = 1; else pSel.selectedIndex = 0;
             document.getElementById('filter-bank').value = "";
             renderDashboard();
         }
 
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
-            renderDashboard(); 
-        }
-
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); renderDashboard(); }
         function exportToExcel() {
             const table = document.getElementById('ratingTable');
             const wb = XLSX.utils.table_to_book(table, {sheet: "Ratings"});
